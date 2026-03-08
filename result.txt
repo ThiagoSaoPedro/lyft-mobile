@@ -1,0 +1,31 @@
+FAIL src/screens/__tests__/ExecutionScreen.test.tsx
+  ● Test suite failed to run
+
+    Invariant Violation: __fbBatchedBridgeConfig is not set, cannot invoke native modules
+
+    [0m [90m 431 |[39m }
+     [90m 432 |[39m
+    [31m[1m>[22m[39m[90m 433 |[39m [36mconst[39m styles [33m=[39m [33mStyleSheet[39m[33m.[39mcreate({
+     [90m     |[39m                [31m[1m^[22m[39m
+     [90m 434 |[39m     container[33m:[39m { flex[33m:[39m [35m1[39m[33m,[39m backgroundColor[33m:[39m [32m'#000'[39m }[33m,[39m
+     [90m 435 |[39m     centerBox[33m:[39m { flex[33m:[39m [35m1[39m[33m,[39m justifyContent[33m:[39m [32m'center'[39m[33m,[39m alignItems[33m:[39m [32m'center'[39m }[33m,[39m
+     [90m 436 |[39m     unstartedHeader[33m:[39m { position[33m:[39m [32m'absolute'[39m[33m,[39m top[33m:[39m [35m50[39m[33m,[39m left[33m:[39m [35m20[39m }[33m,[39m[0m
+
+      at invariant (node_modules/invariant/invariant.js:40:15)
+      at Object.invariant (node_modules/react-native/Libraries/BatchedBridge/NativeModules.js:187:3)
+      at Object.require (node_modules/react-native/Libraries/TurboModule/TurboModuleRegistry.js:15:23)
+      at Object.require (node_modules/react-native/src/private/featureflags/specs/NativeReactNativeFeatureFlags.js:24:1)
+      at Object.require (node_modules/react-native/src/private/featureflags/ReactNativeFeatureFlagsBase.js:16:1)
+      at Object.require (node_modules/react-native/src/private/featureflags/ReactNativeFeatureFlags.js:22:1)
+      at Object.require (node_modules/react-native/Libraries/Components/View/ReactNativeStyleAttributes.js:13:1)
+      at Object.require (node_modules/react-native/Libraries/StyleSheet/StyleSheetExports.js:19:3)
+      at Object.require (node_modules/react-native/Libraries/StyleSheet/StyleSheet.js:30:3)
+      at Object.require [as StyleSheet] (node_modules/react-native/index.js:302:12)
+      at Object.StyleSheet (src/screens/ExecutionScreen.tsx:433:16)
+      at Object.require (src/screens/__tests__/ExecutionScreen.test.tsx:3:1)
+
+Test Suites: 1 failed, 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        1.448 s
+Ran all test suites matching src/screens/__tests__/ExecutionScreen.test.tsx.
