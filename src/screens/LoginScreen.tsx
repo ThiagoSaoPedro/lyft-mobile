@@ -98,8 +98,11 @@ export default function LoginScreen({ navigation }: any) {
                         <Text style={styles.buttonText}>{loading ? 'Entrando...' : 'Entrar na Plataforma'}</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.forgotPass}>
-                        <Text style={styles.forgotText}>Esqueceu sua senha?</Text>
+                    <TouchableOpacity
+                        style={styles.forgotPass}
+                        onPress={() => navigation.navigate('Signup')}
+                    >
+                        <Text style={styles.forgotText}>Não tem uma conta? <Text style={styles.highlight}>Cadastre-se</Text></Text>
                     </TouchableOpacity>
                 </View>
 
