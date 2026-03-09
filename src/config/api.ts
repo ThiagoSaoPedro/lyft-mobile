@@ -14,6 +14,7 @@ export const API_CONFIG = {
     BASE_URL: TUNNEL_URL,
     ENDPOINTS: {
         LOGIN: '/api/login',
+        REGISTER: '/api/register',
         WORKOUTS: '/api/workouts',
         // Adicione outros endpoints aqui
     }
