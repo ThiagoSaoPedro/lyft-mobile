@@ -23,6 +23,7 @@ export default function SignupScreen({ navigation }: any) {
     const [personalId, setPersonalId] = useState('');
     const [loading, setLoading] = useState(false);
 
+    //TODO: criar arquivo separado com as roles
     const roles = [
         {
             id: 'personal',
