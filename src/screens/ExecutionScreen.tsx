@@ -1,3 +1,4 @@
+//* Libraries imports
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     View,
@@ -17,6 +18,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { z } from 'zod';
 
+//* Types imports
+import { Workout } from '../types/workout';
+
+//* CONSTANTS * //
 // Form validation schema
 const setSchema = z.object({
     weight: z.number().nonnegative("Carga inválida"),
@@ -24,20 +29,32 @@ const setSchema = z.object({
     effort: z.number().int().min(1, "1 a 10").max(10, "1 a 10")
 });
 
-const DEFAULT_WORKOUT = {
+const DEFAULT_WORKOUT: Workout = {
     id: 999,
+    personal_id: null,
+    student_id: 0,
     title: "Treino do Dia (Padrão)",
+    cardio_enabled: false,
+    cardio_type: 'minutes',
+    cardio_duration_minutes: null,
+    cardio_calories: null,
     exercises: [
         { name: "Supino Reto", sets_config: [{ type: "work", count: 3, reps: "10" }] },
         { name: "Agachamento Livre", sets_config: [{ type: "work", count: 4, reps: "8-10" }] }
     ]
 };
 
-const MOCK_WORKOUTS = [
+const MOCK_WORKOUTS: Workout[] = [
     DEFAULT_WORKOUT,
     {
         id: 1000,
+        personal_id: null,
+        student_id: 0,
         title: "Costas e Bíceps",
+        cardio_enabled: false,
+        cardio_type: 'minutes',
+        cardio_duration_minutes: null,
+        cardio_calories: null,
         exercises: [
             { name: "Puxada Frontal", sets_config: [{ type: "work", count: 3, reps: "12" }] },
             { name: "Rosca Direta", sets_config: [{ type: "work", count: 3, reps: "10" }] }
@@ -46,9 +63,10 @@ const MOCK_WORKOUTS = [
 ];
 
 export default function ExecutionScreen({ route, navigation }: any) {
-    const passedWorkout = route?.params?.workout;
+    //* HOOKS * //
+    const passedWorkout = route?.params?.workout as Workout | undefined;
 
-    const [workout, setWorkout] = useState<any>(passedWorkout || DEFAULT_WORKOUT);
+    const [workout, setWorkout] = useState<Workout>(passedWorkout || DEFAULT_WORKOUT);
     const [isStarted, setIsStarted] = useState(false);
     const [totalSeconds, setTotalSeconds] = useState(0);
     const [restSeconds, setRestSeconds] = useState(0);
@@ -65,8 +83,12 @@ export default function ExecutionScreen({ route, navigation }: any) {
     // Workout Selection Modal
     const [showWorkoutSelector, setShowWorkoutSelector] = useState(false);
 
+    // Cardio check
+    const [showCardioModal, setShowCardioModal] = useState(false);
+    const [cardioDone, setCardioDone] = useState<boolean | null>(null);
+
     // Form Data State [exerciseIndex][setIndex] -> { weight, reps, effort, done }
-    const [setsData, setSetsData] = useState<any>({});
+    const [setsData, setSetsData] = useState<Record<number, { weight: string, reps: string, effort: string, done: boolean, error?: string | null }[]>>({});
 
     // Initialize set tracking data when workout changes
     useEffect(() => {
@@ -101,6 +123,7 @@ export default function ExecutionScreen({ route, navigation }: any) {
         };
     }, []);
 
+    //* ACTIONS * //
     const startWorkout = () => {
         setIsStarted(true);
         totalTimerRef.current = setInterval(() => {
@@ -108,21 +131,57 @@ export default function ExecutionScreen({ route, navigation }: any) {
         }, 1000);
     };
 
-    const endWorkout = () => {
-        Alert.alert("Encerrar Treino", "Deseja finalizar o treino?", [
-            { text: "Cancelar", style: "cancel" },
-            {
-                text: "Encerrar",
-                style: "destructive",
-                onPress: () => {
-                    if (totalTimerRef.current) clearInterval(totalTimerRef.current);
-                    if (restTimerRef.current) clearInterval(restTimerRef.current);
-                    Alert.alert("Parabéns!", `Treino concluído com sucesso em ${formatTime(totalSeconds)}.`);
-                    navigation.goBack();
-                }
-            }
-        ]);
+    const finishSession = (cardioDoneValue: boolean | null) => {
+        if (totalTimerRef.current) clearInterval(totalTimerRef.current);
+        if (restTimerRef.current) clearInterval(restTimerRef.current);
+        Alert.alert("Parabéns!", `Treino concluído com sucesso em ${formatTime(totalSeconds)}.`);
+        navigation.goBack();
     };
+
+    const endWorkout = () => {
+        if (workout?.cardio_enabled) {
+            setShowCardioModal(true);
+        } else {
+            Alert.alert("Encerrar Treino", "Deseja finalizar o treino?", [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Encerrar", style: "destructive", onPress: () => finishSession(null) }
+            ]);
+        }
+    };
+
+    const renderCardioModal = () => (
+        <Modal visible={showCardioModal} animationType="slide" transparent>
+            <View style={styles.modalBg}>
+                <View style={[styles.modalContent, { alignItems: 'center' }]}>
+                    <MaterialCommunityIcons name="heart-pulse" size={48} color="#ef4444" style={{ marginBottom: 16 }} />
+                    <Text style={styles.modalTitle}>Cardio Concluído?</Text>
+                    {workout?.cardio_enabled && (
+                        <Text style={styles.cardioModalSubtitle}>
+                            Meta: {workout.cardio_type === 'calories' 
+                                ? `${workout.cardio_calories} calorias` 
+                                : `${workout.cardio_duration_minutes} minutos`} de cardio
+                        </Text>
+                    )}
+
+                    <TouchableOpacity
+                        style={styles.cardioDoneBtn}
+                        onPress={() => { setShowCardioModal(false); finishSession(true); }}
+                    >
+                        <MaterialCommunityIcons name="check-circle" size={20} color="#fff" />
+                        <Text style={styles.cardioDoneBtnText}>SIM, FIZ O CARDIO</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.cardioSkipBtn}
+                        onPress={() => { setShowCardioModal(false); finishSession(false); }}
+                    >
+                        <MaterialCommunityIcons name="close-circle-outline" size={20} color="#9CA3AF" />
+                        <Text style={styles.cardioSkipBtnText}>NÃO FIZ</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Modal>
+    );
 
     const startRest = () => {
         if (restTimerRef.current) clearInterval(restTimerRef.current);
@@ -312,6 +371,7 @@ export default function ExecutionScreen({ route, navigation }: any) {
                     </TouchableOpacity>
                 </View>
                 {renderWorkoutSelector()}
+                {renderCardioModal()}
             </SafeAreaView>
         );
     }
@@ -426,6 +486,7 @@ export default function ExecutionScreen({ route, navigation }: any) {
                 </View>
             </KeyboardAvoidingView>
             {renderWorkoutSelector()}
+            {renderCardioModal()}
         </SafeAreaView>
     );
 }
@@ -574,5 +635,31 @@ const styles = StyleSheet.create({
     modalItemTitle: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
     modalItemSubtitle: { color: '#9CA3AF', fontSize: 12 },
     modalCloseBtn: { marginTop: 10, padding: 16, alignItems: 'center' },
-    modalCloseBtnText: { color: '#9CA3AF', fontSize: 12, fontWeight: 'bold' }
+    modalCloseBtnText: { color: '#9CA3AF', fontSize: 12, fontWeight: 'bold' },
+
+    cardioModalSubtitle: { color: '#9CA3AF', fontSize: 14, marginBottom: 28, textAlign: 'center' },
+    cardioDoneBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        width: '100%',
+        backgroundColor: '#ef4444',
+        paddingVertical: 16,
+        borderRadius: 12,
+        justifyContent: 'center',
+        marginBottom: 12,
+    },
+    cardioDoneBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14, letterSpacing: 1 },
+    cardioSkipBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        width: '100%',
+        paddingVertical: 16,
+        borderRadius: 12,
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: '#27272a',
+    },
+    cardioSkipBtnText: { color: '#9CA3AF', fontWeight: 'bold', fontSize: 14, letterSpacing: 1 },
 });

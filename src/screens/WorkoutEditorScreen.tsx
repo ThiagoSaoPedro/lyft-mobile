@@ -9,19 +9,31 @@ import {
     Alert,
     StatusBar,
     KeyboardAvoidingView,
-    Platform
+    Platform,
+    Switch
 } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+//* Config imports
 import { API_CONFIG } from '../config/api';
 
+//* Types imports
+import { Workout, User, Exercise, SetConfig } from '../types/workout';
+
 export default function WorkoutEditorScreen({ route, navigation }: any) {
-    const { token, user, workout } = route.params;
+    //* HOOKS * //
+    const { token, user, workout } = route.params as { token: string, user: User, workout?: Workout };
     const isEditing = !!workout;
 
     const [title, setTitle] = useState(workout?.title || '');
     const [description, setDescription] = useState(workout?.description || '');
     const [studentId, setStudentId] = useState(workout?.student_id?.toString() || '');
-    const [exercises, setExercises] = useState(workout?.exercises?.map((ex: any) => ({
+    const [cardioEnabled, setCardioEnabled] = useState(workout?.cardio_enabled || false);
+    const [cardioType, setCardioType] = useState(workout?.cardio_type || 'minutes');
+    const [cardioDuration, setCardioDuration] = useState(workout?.cardio_duration_minutes?.toString() || '');
+    const [cardioCalories, setCardioCalories] = useState(workout?.cardio_calories?.toString() || '');
+    const [exercises, setExercises] = useState<Omit<Exercise, 'id' | 'workout_id'>[]>(workout?.exercises?.map((ex) => ({
         name: ex.name,
         sets_config: ex.sets_config || [{ type: 'work', count: 3, reps: '10-12' }]
     })) || [{
@@ -29,6 +41,7 @@ export default function WorkoutEditorScreen({ route, navigation }: any) {
         sets_config: [{ type: 'work', count: 3, reps: '10-12' }]
     }]);
 
+    //* ACTIONS * //
     const addExercise = () => {
         setExercises([...exercises, {
             name: '',
@@ -67,20 +80,24 @@ export default function WorkoutEditorScreen({ route, navigation }: any) {
         setExercises(newEx);
     };
 
-    const updateSetField = (exIndex: number, setIndex: number, field: string, value: any) => {
+    const updateSetField = (exIndex: number, setIndex: number, field: keyof SetConfig, value: any) => {
         const newEx = [...exercises];
-        newEx[exIndex].sets_config[setIndex][field] = value;
+        (newEx[exIndex].sets_config[setIndex] as any)[field] = value;
         setExercises(newEx);
     };
 
     const onSave = async () => {
         if (!title.trim()) return Alert.alert('Erro', 'O treino precisa de um título');
-        if (exercises.some((e: any) => !e.name.trim())) return Alert.alert('Erro', 'Todos os exercícios precisam de nome');
+        if (exercises.some((e) => !e.name.trim())) return Alert.alert('Erro', 'Todos os exercícios precisam de nome');
 
         const payload = {
             title,
             description,
             student_id: user.role === 'personal' ? studentId : user.id.toString(),
+            cardio_enabled: cardioEnabled,
+            cardio_type: cardioEnabled ? cardioType : 'minutes',
+            cardio_duration_minutes: cardioEnabled && cardioType === 'minutes' && cardioDuration ? parseInt(cardioDuration) : null,
+            cardio_calories: cardioEnabled && cardioType === 'calories' && cardioCalories ? parseInt(cardioCalories) : null,
             exercises
         };
 
@@ -167,6 +184,70 @@ export default function WorkoutEditorScreen({ route, navigation }: any) {
                                 multiline
                             />
                         </View>
+
+                        {/* Cardio Section */}
+                        <View style={styles.cardioRow}>
+                            <View style={styles.cardioLeft}>
+                                <MaterialCommunityIcons name="heart-pulse" size={20} color={cardioEnabled ? '#ef4444' : '#4B5563'} />
+                                <View style={{ marginLeft: 12 }}>
+                                    <Text style={styles.label}>CARDIO</Text>
+                                    <Text style={styles.cardioSubLabel}>
+                                        {cardioEnabled ? 'Ativado' : 'Desativado'}
+                                    </Text>
+                                </View>
+                            </View>
+                            <Switch
+                                value={cardioEnabled}
+                                onValueChange={setCardioEnabled}
+                                trackColor={{ false: '#27272a', true: '#ef444460' }}
+                                thumbColor={cardioEnabled ? '#ef4444' : '#4B5563'}
+                            />
+                        </View>
+
+                        {cardioEnabled && (
+                            <View style={{ marginTop: 12 }}>
+                                <View style={styles.cardioTypeToggle}>
+                                    <TouchableOpacity 
+                                        style={[styles.typeToggleBtn, cardioType === 'minutes' && styles.typeToggleActive]} 
+                                        onPress={() => setCardioType('minutes')}
+                                    >
+                                        <Text style={[styles.typeToggleText, cardioType === 'minutes' && styles.typeToggleTextActive]}>MINUTOS</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity 
+                                        style={[styles.typeToggleBtn, cardioType === 'calories' && styles.typeToggleActive]} 
+                                        onPress={() => setCardioType('calories')}
+                                    >
+                                        <Text style={[styles.typeToggleText, cardioType === 'calories' && styles.typeToggleTextActive]}>CALORIAS</Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                {cardioType === 'minutes' ? (
+                                    <View style={[styles.inputGroup, { marginTop: 12 }]}>
+                                        <Text style={styles.label}>DURAÇÃO DO CARDIO (MINUTOS)</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Ex: 30"
+                                            placeholderTextColor="#4B5563"
+                                            value={cardioDuration}
+                                            onChangeText={setCardioDuration}
+                                            keyboardType="numeric"
+                                        />
+                                    </View>
+                                ) : (
+                                    <View style={[styles.inputGroup, { marginTop: 12 }]}>
+                                        <Text style={styles.label}>META DE CALORIAS</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Ex: 300"
+                                            placeholderTextColor="#4B5563"
+                                            value={cardioCalories}
+                                            onChangeText={setCardioCalories}
+                                            keyboardType="numeric"
+                                        />
+                                    </View>
+                                )}
+                            </View>
+                        )}
                     </View>
 
                     <View style={styles.sectionHeader}>
@@ -379,5 +460,42 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         borderRadius: 8
     },
-    exActionText: { color: '#9CA3AF', fontSize: 9, fontWeight: 'bold' }
+    exActionText: { color: '#9CA3AF', fontSize: 9, fontWeight: 'bold' },
+    cardioRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#09090b',
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#27272a',
+    },
+    cardioLeft: { flexDirection: 'row', alignItems: 'center' },
+    cardioSubLabel: { color: '#9CA3AF', fontSize: 12, marginTop: 2 },
+    cardioTypeToggle: {
+        flexDirection: 'row',
+        backgroundColor: '#09090b',
+        borderRadius: 12,
+        padding: 4,
+        borderWidth: 1,
+        borderColor: '#27272a',
+    },
+    typeToggleBtn: {
+        flex: 1,
+        paddingVertical: 10,
+        alignItems: 'center',
+        borderRadius: 10,
+    },
+    typeToggleActive: {
+        backgroundColor: '#27272a',
+    },
+    typeToggleText: {
+        color: '#4B5563',
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    typeToggleTextActive: {
+        color: '#fff',
+    },
 });

@@ -1,3 +1,4 @@
+//* Libraries imports
 import React, { useState, useCallback } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
@@ -15,19 +16,26 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+
+//* Config imports
 import { API_CONFIG } from '../config/api';
+
+//* Types imports
+import { Workout, User } from '../types/workout';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const H_PAD = 20;
 
 export default function HomeScreen({ route, navigation }: any) {
-    const { token, user } = route.params;
+    //* HOOKS * //
+    const { token, user } = route.params as { token: string, user: User };
     const insets = useSafeAreaInsets();
-    const [workouts, setWorkouts] = useState<any[]>([]);
+    const [workouts, setWorkouts] = useState<Workout[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [progress, setProgress] = useState(0.65); // 65% completed
 
+    //* ACTIONS * //
     const fetchWorkouts = () => {
         fetch(`${API_CONFIG.BASE_URL}/api/workouts`, {
             headers: {
@@ -60,6 +68,7 @@ export default function HomeScreen({ route, navigation }: any) {
         fetchWorkouts();
     };
 
+    //* CONSTANTS * //
     const JS_DAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
     const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
     const today = new Date();
@@ -102,7 +111,7 @@ export default function HomeScreen({ route, navigation }: any) {
                 </TouchableOpacity>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 20 }}>
-                {workouts.length > 0 ? workouts.slice(0, 4).map((item, index) => (
+                {workouts.length > 0 ? workouts.slice(0, 4).map((item: Workout, index) => (
                     <TouchableOpacity
                         key={index}
                         style={styles.workoutCardSmall}
@@ -112,7 +121,12 @@ export default function HomeScreen({ route, navigation }: any) {
                             <MaterialCommunityIcons name="lightning-bolt" size={20} color="#8b5cf6" />
                         </View>
                         <Text style={styles.workoutCardType}>{item.title.split('-')[0].trim()}</Text>
-                        <Text style={styles.workoutCardTitle} numberOfLines={1}>{item.title.split('-')[1]?.trim() || item.title}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Text style={[styles.workoutCardTitle, { flex: 1 }]} numberOfLines={1}>{item.title.split('-')[1]?.trim() || item.title}</Text>
+                            {item.cardio_enabled && (
+                                <MaterialCommunityIcons name="heart-pulse" size={14} color="#ef4444" style={{ marginLeft: 4 }} />
+                            )}
+                        </View>
                     </TouchableOpacity>
                 )) : (
                     <TouchableOpacity style={styles.emptyWorkoutCard} onPress={() => navigation.navigate('WorkoutEditor', { token, user })}>
@@ -155,6 +169,14 @@ export default function HomeScreen({ route, navigation }: any) {
                             <Text style={styles.scheduleLabelActive}>
                                 {todayWorkout ? `Treino: ${todayWorkout.title}` : 'Descanso Ativo'}
                             </Text>
+                            {todayWorkout?.cardio_enabled && (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                                    <MaterialCommunityIcons name="heart-pulse" size={12} color="rgba(255,255,255,0.7)" />
+                                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: 'bold', marginLeft: 4 }}>
+                                        CARDIO: {todayWorkout.cardio_type === 'calories' ? `${todayWorkout.cardio_calories} KCAL` : `${todayWorkout.cardio_duration_minutes} MIN`}
+                                    </Text>
+                                </View>
+                            )}
                         </View>
                         <MaterialCommunityIcons name="play-circle" size={28} color="#fff" />
                     </TouchableOpacity>
@@ -216,13 +238,7 @@ export default function HomeScreen({ route, navigation }: any) {
                         )}
                     </ScrollView>
 
-                    {/* FAB */}
-                    <TouchableOpacity
-                        style={[styles.fab, { bottom: insets.bottom + 80 }]}
-                        onPress={() => navigation.navigate('WorkoutEditor', { token, user })}
-                    >
-                        <MaterialCommunityIcons name="plus" size={30} color="#fff" />
-                    </TouchableOpacity>
+
                 </View>
             )}
         </SafeAreaView>
@@ -384,22 +400,7 @@ const styles = StyleSheet.create({
     historyDate: { color: '#6B7280', fontSize: 12, marginTop: 2 },
     historyXp: { color: '#8b5cf6', fontWeight: '900', fontSize: 12 },
 
-    // FAB
-    fab: {
-        position: 'absolute',
-        right: 20,
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: '#8b5cf6',
-        justifyContent: 'center',
-        alignItems: 'center',
-        elevation: 8,
-        shadowColor: '#8b5cf6',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-    },
+
 
     // Empty State
     emptyState: { alignItems: 'center', paddingVertical: 40 },

@@ -1,3 +1,4 @@
+//* Libraries imports
 import React, { useState, useCallback } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
@@ -14,18 +15,25 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+
+//* Config imports
 import { API_CONFIG } from '../config/api';
+
+//* Types imports
+import { Workout, User } from '../types/workout';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const H_PAD = Math.max(16, SCREEN_WIDTH * 0.05);
 
 export default function WorkoutsScreen({ route, navigation }: any) {
-    const { token, user } = route.params;
+    //* HOOKS * //
+    const { token, user } = route.params as { token: string, user: User };
     const insets = useSafeAreaInsets();
-    const [workouts, setWorkouts] = useState<any[]>([]);
+    const [workouts, setWorkouts] = useState<Workout[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
+    //* ACTIONS * //
     const fetchWorkouts = () => {
         fetch(`${API_CONFIG.BASE_URL}/api/workouts`, {
             headers: {
@@ -88,7 +96,7 @@ export default function WorkoutsScreen({ route, navigation }: any) {
         );
     };
 
-    const renderCard = ({ item }: any) => {
+    const renderCard = ({ item }: { item: Workout }) => {
         let subTitle = 'TREINO';
         let mainTitle = item.title;
         if (item.title.toUpperCase().startsWith('TREINO')) {
@@ -131,7 +139,7 @@ export default function WorkoutsScreen({ route, navigation }: any) {
                 </View>
 
                 <View style={styles.workoutCardContent}>
-                    {item.exercises?.slice(0, 3).map((ex: any, i: number) => (
+                    {item.exercises?.slice(0, 3).map((ex, i: number) => (
                         <View
                             key={i}
                             style={[
@@ -152,6 +160,14 @@ export default function WorkoutsScreen({ route, navigation }: any) {
                         <Text style={styles.moreExercisesText}>
                             + {item.exercises.length - 3} exercícios
                         </Text>
+                    )}
+                    {item.cardio_enabled && (
+                        <View style={styles.cardioBadgeListItem}>
+                            <MaterialCommunityIcons name="heart-pulse" size={14} color="#ef4444" />
+                            <Text style={styles.cardioBadgeText}>
+                                CARDIO: {item.cardio_type === 'calories' ? `${item.cardio_calories} kcal` : `${item.cardio_duration_minutes} min`}
+                            </Text>
+                        </View>
                     )}
                 </View>
 
@@ -343,4 +359,21 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     emptyText: { color: '#9CA3AF', textAlign: 'center', fontSize: 12 },
+    cardioBadgeListItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+        marginTop: 8,
+        alignSelf: 'flex-start',
+    },
+    cardioBadgeText: {
+        color: '#ef4444',
+        fontSize: 10,
+        fontWeight: '900',
+        marginLeft: 4,
+        textTransform: 'uppercase',
+    },
 });
