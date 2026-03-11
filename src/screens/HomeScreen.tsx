@@ -11,15 +11,14 @@ import {
     RefreshControl,
     Platform,
     Dimensions,
+    ScrollView,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { API_CONFIG } from '../config/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// Margens horizontais responsivas
-const H_PAD = Math.max(16, SCREEN_WIDTH * 0.05);
+const H_PAD = 20;
 
 export default function HomeScreen({ route, navigation }: any) {
     const { token, user } = route.params;
@@ -27,6 +26,7 @@ export default function HomeScreen({ route, navigation }: any) {
     const [workouts, setWorkouts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [progress, setProgress] = useState(0.65); // 65% completed
 
     const fetchWorkouts = () => {
         fetch(`${API_CONFIG.BASE_URL}/api/workouts`, {
@@ -60,189 +60,127 @@ export default function HomeScreen({ route, navigation }: any) {
         fetchWorkouts();
     };
 
-    // ─── Workout Card ────────────────────────────────────────────────────────────
-    const renderCard = ({ item, hideEdit }: any) => {
-        let subTitle = 'TREINO';
-        let mainTitle = item.title;
-        if (item.title.toUpperCase().startsWith('TREINO')) {
-            const parts = item.title.split('-');
-            subTitle = parts[0].trim().toUpperCase();
-            mainTitle =
-                parts.length > 1 ? parts.slice(1).join('-').trim() : item.title;
-            if (parts.length === 1) subTitle = 'TREINO';
-        }
-
-        return (
-            <View style={styles.workoutCard}>
-                <View style={styles.workoutCardHeader}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.workoutCardSubtitle}>{subTitle}</Text>
-                        <Text style={styles.workoutCardTitle} numberOfLines={1}>
-                            {mainTitle}
-                        </Text>
-                    </View>
-
-                    {!hideEdit && (user.role === 'personal' || user.id === item.student_id) && (
-                        <TouchableOpacity
-                            style={styles.editBtnBox}
-                            onPress={() =>
-                                navigation.navigate('WorkoutEditor', { workout: item, token, user })
-                            }
-                        >
-                            <MaterialCommunityIcons name="pencil-outline" size={15} color="#6B7280" />
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                <View style={styles.workoutCardContent}>
-                    {item.exercises?.slice(0, 3).map((ex: any, i: number) => (
-                        <View
-                            key={i}
-                            style={[
-                                styles.exerciseRow,
-                                i !== Math.min((item.exercises?.length || 0), 3) - 1 &&
-                                styles.exerciseRowBorder,
-                            ]}
-                        >
-                            <Text style={styles.exerciseNameText} numberOfLines={1}>
-                                {ex.name}
-                            </Text>
-                            <Text style={styles.exerciseSetsText}>
-                                {ex.sets_config?.length || 0} blocos
-                            </Text>
-                        </View>
-                    ))}
-                    {(item.exercises?.length || 0) > 3 && (
-                        <Text style={styles.moreExercisesText}>
-                            + {item.exercises.length - 3} exercícios
-                        </Text>
-                    )}
-                </View>
-
-                <TouchableOpacity
-                    style={styles.startBtn}
-                    onPress={() => navigation.navigate('Execution', { workout: item, token })}
-                >
-                    <Text style={styles.startBtnText}>INICIAR TREINO</Text>
-                </TouchableOpacity>
-            </View>
-        );
-    };
-
-    const canCreate = user.role === 'personal' || user.role === 'user';
-
     const JS_DAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
     const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
     const today = new Date();
     const todayName = JS_DAYS[today.getDay()];
-    const todayDateStr = `${todayName}, ${today.getDate()} de ${MESES[today.getMonth()]}`;
-
     const todayWorkout = workouts.find((w: any) => w.planned_day === todayName);
 
-    // ─── Header ──────────────────────────────────────────────────────────────────
-    const renderHeader = () => {
-        return (
-            <View>
-                {/* Topo: título + avatar */}
-                <View style={styles.header}>
-                    <View style={{ flex: 1, paddingRight: 12 }}>
-                        <Text style={styles.dashboardHeaderTitle} numberOfLines={1} adjustsFontSizeToFit>
-                            PERFORMANCE SYSTEM
-                        </Text>
-                        <Text style={styles.dashboardUserInfo}>
-                            <Text style={{ color: '#fff', fontWeight: 'bold' }}>{todayDateStr}</Text>
-                            {'\n'}Logado como{' '}
-                            <Text style={styles.textPrimary}>
-                                {user?.name?.split(' ')[0] || 'Atleta'}
-                            </Text>
-                            <Text style={{ color: '#9CA3AF' }}> ({user?.role})</Text>
-                        </Text>
-                    </View>
-                    <View style={styles.avatar}>
-                        <Text style={styles.avatarLabel}>
-                            {user?.name?.substring(0, 2).toUpperCase() || 'AI'}
-                        </Text>
-                    </View>
-                </View>
-
-                {/* Grid de estatísticas */}
-                <View style={styles.statsGrid}>
-                    <View style={styles.statsRow}>
-                        <StatCard
-                            icon="target"
-                            iconColor="#8b5cf6"
-                            bgColor="rgba(139, 92, 246, 0.12)"
-                            label="FOCO SEMANAL"
-                            value="92%"
-                        />
-                        <StatCard
-                            icon="fire"
-                            iconColor="#f97316"
-                            bgColor="rgba(249, 115, 22, 0.12)"
-                            label="VOLUME TOTAL"
-                            value="125t"
-                        />
-                    </View>
-                    <View style={styles.statsRow}>
-                        <StatCard
-                            icon="calendar-check"
-                            iconColor="#3b82f6"
-                            bgColor="rgba(59, 130, 246, 0.12)"
-                            label="CONSISTÊNCIA"
-                            value="18d"
-                        />
-                        <StatCard
-                            icon="lightning-bolt"
-                            iconColor="#10b981"
-                            bgColor="rgba(16, 185, 129, 0.12)"
-                            label="SCORE BIO"
-                            value="8.4"
-                        />
-                    </View>
-                </View>
-
-                {/* Cabeçalho da seção Cronograma Diário */}
-                <View style={styles.sectionHeader}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <MaterialCommunityIcons
-                            name="calendar-today"
-                            size={17}
-                            color="#fff"
-                            style={{ marginRight: 7 }}
-                        />
-                        <Text style={styles.sectionTitle}>CRONOGRAMA DIÁRIO</Text>
-                    </View>
-                </View>
-
-                <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold', marginBottom: 16 }}>{todayDateStr}</Text>
+    const renderHeader = () => (
+        <View style={styles.headerTop}>
+            <View style={styles.headerInfo}>
+                <Text style={styles.greeting}>Olá, <Text style={{ fontWeight: '900', color: '#fff' }}>{user?.name?.split(' ')[0]}</Text> 👋</Text>
+                <Text style={styles.subGreeting}>Pronto para o treino de hoje?</Text>
             </View>
-        );
-    };
-
-    // ─── Footer ──────────────────────────────────────────────────────────────────
-    const renderFooter = () => (
-        <View style={styles.footerSection}>
-            <View style={styles.sectionHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <MaterialCommunityIcons
-                        name="clock-outline"
-                        size={17}
-                        color="#8b5cf6"
-                        style={{ marginRight: 7 }}
-                    />
-                    <Text style={styles.sectionTitle}>LOGS RECENTES</Text>
-                </View>
-                <TouchableOpacity>
-                    <Text style={styles.viewAllText}>Ver todos {'>'}</Text>
-                </TouchableOpacity>
-            </View>
-
-            <LogCard title="Peitoral & Ombro" subtitle="Concluído em 03/03 • 88% Precisão" xp="XP+450" />
-            <LogCard title="Costas & Bíceps" subtitle="Concluído em 01/03 • 82% Precisão" xp="XP+380" />
+            <TouchableOpacity
+                style={styles.avatarMini}
+                onPress={() => navigation.navigate('ProfileTab')}
+            >
+                <Text style={styles.avatarMiniText}>{user?.name?.substring(0, 1).toUpperCase()}</Text>
+            </TouchableOpacity>
         </View>
     );
 
-    // ─── Render ──────────────────────────────────────────────────────────────────
+    const renderProgressBar = () => (
+        <View style={styles.progressSection}>
+            <View style={styles.progressHeader}>
+                <Text style={styles.progressTitle}>PROGRESSO DIÁRIO</Text>
+                <Text style={styles.progressValue}>{Math.round(progress * 100)}%</Text>
+            </View>
+            <View style={styles.progressBarBg}>
+                <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
+            </View>
+        </View>
+    );
+
+    const renderWorkoutsCarousel = () => (
+        <View style={styles.carouselSection}>
+            <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>MEUS TREINOS</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('WorkoutsTab')}>
+                    <Text style={styles.viewAll}>Ver Todos</Text>
+                </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 20 }}>
+                {workouts.length > 0 ? workouts.slice(0, 4).map((item, index) => (
+                    <TouchableOpacity
+                        key={index}
+                        style={styles.workoutCardSmall}
+                        onPress={() => navigation.navigate('Execution', { workout: item, token })}
+                    >
+                        <View style={styles.workoutCardIcon}>
+                            <MaterialCommunityIcons name="lightning-bolt" size={20} color="#8b5cf6" />
+                        </View>
+                        <Text style={styles.workoutCardType}>{item.title.split('-')[0].trim()}</Text>
+                        <Text style={styles.workoutCardTitle} numberOfLines={1}>{item.title.split('-')[1]?.trim() || item.title}</Text>
+                    </TouchableOpacity>
+                )) : (
+                    <TouchableOpacity style={styles.emptyWorkoutCard} onPress={() => navigation.navigate('WorkoutEditor', { token, user })}>
+                        <MaterialCommunityIcons name="plus-circle-outline" size={24} color="#4B5563" />
+                        <Text style={styles.emptyWorkoutText}>Novo Treino</Text>
+                    </TouchableOpacity>
+                )}
+            </ScrollView>
+        </View>
+    );
+
+    const renderScheduleWidget = () => (
+        <View style={styles.scheduleSection}>
+            <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>O QUE TEMOS PARA HOJE?</Text>
+            </View>
+            <View style={styles.scheduleCard}>
+                <View style={styles.scheduleTimeline}>
+                    <View style={styles.timelineDotActive} />
+                    <View style={styles.timelineLine} />
+                    <View style={styles.timelineDot} />
+                </View>
+                <View style={styles.scheduleContent}>
+                    {/* Exemplo de card do Kanban */}
+                    <View style={styles.scheduleItem}>
+                        <View>
+                            <Text style={styles.scheduleTime}>09:00</Text>
+                            <Text style={styles.scheduleLabel}>Kanban: Meta Diária</Text>
+                        </View>
+                        <MaterialCommunityIcons name="check-circle" size={20} color="#10b981" />
+                    </View>
+
+                    {/* Treino do dia */}
+                    <TouchableOpacity
+                        style={styles.scheduleItemActive}
+                        onPress={() => todayWorkout && navigation.navigate('Execution', { workout: todayWorkout, token })}
+                    >
+                        <View>
+                            <Text style={styles.scheduleTimeActive}>18:30</Text>
+                            <Text style={styles.scheduleLabelActive}>
+                                {todayWorkout ? `Treino: ${todayWorkout.title}` : 'Descanso Ativo'}
+                            </Text>
+                        </View>
+                        <MaterialCommunityIcons name="play-circle" size={28} color="#fff" />
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </View>
+    );
+
+    const renderRecentHistory = () => (
+        <View style={styles.historySection}>
+            <Text style={styles.sectionTitle}>ÚLTIMOS TREINOS REALIZADOS</Text>
+            {[1, 2].map((_, i) => (
+                <View key={i} style={styles.historyCard}>
+                    <View style={styles.historyIconBox}>
+                        <MaterialCommunityIcons name="history" size={20} color="#f97316" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.historyTitle}>Peitoral e Tríceps</Text>
+                        <Text style={styles.historyDate}>07 de Março • 55 min</Text>
+                    </View>
+                    <Text style={styles.historyXp}>+450 XP</Text>
+                </View>
+            ))}
+        </View>
+    );
+
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
             <StatusBar barStyle="light-content" backgroundColor="#09090b" />
@@ -252,312 +190,225 @@ export default function HomeScreen({ route, navigation }: any) {
                     <ActivityIndicator color="#8b5cf6" size="large" />
                 </View>
             ) : (
-                <FlatList
-                    data={todayWorkout ? [todayWorkout] : []}
-                    keyExtractor={item => item.id.toString()}
-                    renderItem={renderCard}
-                    ListHeaderComponent={renderHeader}
-                    ListFooterComponent={renderFooter}
-                    contentContainerStyle={[
-                        styles.listContainer,
-                        { paddingHorizontal: H_PAD, paddingBottom: insets.bottom + 90 },
-                    ]}
-                    showsVerticalScrollIndicator={false}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            tintColor="#8b5cf6"
-                        />
-                    }
-                    ListEmptyComponent={
-                        <View style={styles.emptyContainer}>
-                            <Text style={styles.emptyTextHeader}>DIA LIVRE</Text>
-                            <Text style={styles.emptyText}>Não há atividades cadastradas para o dia de hoje.</Text>
-                        </View>
-                    }
-                />
+                <View style={{ flex: 1 }}>
+                    <ScrollView
+                        style={{ flex: 1 }}
+                        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
+                        showsVerticalScrollIndicator={false}
+                        refreshControl={
+                            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#8b5cf6" />
+                        }
+                    >
+                        {renderHeader()}
+                        {renderProgressBar()}
+                        {renderWorkoutsCarousel()}
+                        {renderScheduleWidget()}
+                        {renderRecentHistory()}
+
+                        {/* Empty State se não houver treinos */}
+                        {workouts.length === 0 && (
+                            <View style={styles.emptyState}>
+                                <Text style={styles.emptyMessage}>"A disciplina é a ponte entre metas e realizações."</Text>
+                                <TouchableOpacity style={styles.quickStartBtn}>
+                                    <Text style={styles.quickStartBtnText}>TREINO RÁPIDO (15 MIN)</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </ScrollView>
+
+                    {/* FAB */}
+                    <TouchableOpacity
+                        style={[styles.fab, { bottom: insets.bottom + 80 }]}
+                        onPress={() => navigation.navigate('WorkoutEditor', { token, user })}
+                    >
+                        <MaterialCommunityIcons name="plus" size={30} color="#fff" />
+                    </TouchableOpacity>
+                </View>
             )}
         </SafeAreaView>
     );
 }
 
-// ─── Sub-componentes ─────────────────────────────────────────────────────────
-
-function StatCard({
-    icon,
-    iconColor,
-    bgColor,
-    label,
-    value,
-}: {
-    icon: any;
-    iconColor: string;
-    bgColor: string;
-    label: string;
-    value: string;
-}) {
-    return (
-        <View style={styles.statCard}>
-            <View style={[styles.statIconBox, { backgroundColor: bgColor }]}>
-                <MaterialCommunityIcons name={icon} size={15} color={iconColor} />
-            </View>
-            <Text style={styles.statLabel}>{label}</Text>
-            <Text style={styles.statValue}>{value}</Text>
-        </View>
-    );
-}
-
-function LogCard({
-    title,
-    subtitle,
-    xp,
-}: {
-    title: string;
-    subtitle: string;
-    xp: string;
-}) {
-    return (
-        <View style={styles.logCard}>
-            <View style={styles.logIconBox}>
-                <MaterialCommunityIcons name="fire" size={17} color="#f97316" />
-            </View>
-            <View style={styles.logContent}>
-                <Text style={styles.logTitle}>{title}</Text>
-                <Text style={styles.logSubtitle}>{subtitle}</Text>
-            </View>
-            <Text style={styles.logXp}>{xp}</Text>
-        </View>
-    );
-}
-
-// ─── Estilos ─────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: '#09090b',
-    },
+    safeArea: { flex: 1, backgroundColor: '#09090b' },
+    scrollContent: { paddingHorizontal: H_PAD },
+    centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-    // Cabeçalho
-    header: {
+    // Header
+    headerTop: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 12,
-        marginTop: Platform.OS === 'android' ? 4 : 0,
+        paddingVertical: 20,
     },
-    dashboardHeaderTitle: {
-        color: '#fff',
-        fontSize: 15,
-        fontWeight: '900',
-        fontStyle: 'italic',
-        textTransform: 'uppercase',
-        letterSpacing: -0.5,
-    },
-    dashboardUserInfo: {
-        color: '#9CA3AF',
-        fontSize: 11,
-        marginTop: 2,
-        fontWeight: '500',
-    },
-    textPrimary: { color: '#8b5cf6' },
-    avatar: {
-        width: 34,
-        height: 34,
-        borderRadius: 9,
+    headerInfo: { flex: 1 },
+    greeting: { color: 'rgba(255,255,255,0.6)', fontSize: 16 },
+    subGreeting: { color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: 2 },
+    avatarMini: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: '#8b5cf6',
         justifyContent: 'center',
         alignItems: 'center',
+        borderWidth: 2,
+        borderColor: 'rgba(139, 92, 246, 0.3)',
     },
-    avatarLabel: { color: '#fff', fontWeight: '900', fontSize: 12 },
+    avatarMiniText: { color: '#fff', fontWeight: 'bold' },
 
-    // Grid stats
-    statsGrid: {
-        marginBottom: 18,
-        gap: 10,
-    },
-    statsRow: {
+    // Progress Bar
+    progressSection: { marginBottom: 30 },
+    progressHeader: {
         flexDirection: 'row',
-        gap: 10,
-    },
-    statCard: {
-        flex: 1,
-        backgroundColor: 'rgba(255,255,255,0.03)',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.06)',
-        borderRadius: 14,
-        padding: 12,
-    },
-    statIconBox: {
-        width: 26,
-        height: 26,
-        borderRadius: 7,
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 8,
     },
-    statLabel: {
-        fontSize: 8,
-        fontWeight: '900',
-        textTransform: 'uppercase',
-        color: '#6B7280',
-        letterSpacing: 0.5,
-        marginBottom: 2,
+    progressTitle: { color: '#fff', fontSize: 12, fontWeight: '900', letterSpacing: 1 },
+    progressValue: { color: '#8b5cf6', fontSize: 14, fontWeight: '900' },
+    progressBarBg: {
+        height: 8,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 4,
+        overflow: 'hidden',
     },
-    statValue: {
-        fontSize: 22,
-        fontWeight: '900',
-        color: '#fff',
+    progressBarFill: {
+        height: '100%',
+        backgroundColor: '#8b5cf6',
+        borderRadius: 4,
     },
 
-    // Seção
+    // Carousel
+    carouselSection: { marginBottom: 30 },
     sectionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: 16,
     },
-    sectionTitle: {
-        fontSize: 13,
-        fontWeight: '900',
-        color: '#fff',
-        fontStyle: 'italic',
-        textTransform: 'uppercase',
-        letterSpacing: -0.5,
-    },
-    newWorkoutBtn: {
-        backgroundColor: '#8b5cf6',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 8,
-    },
-    newWorkoutBtnText: {
-        color: '#fff',
-        fontSize: 9,
-        fontWeight: '900',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-
-    // Lista
-    listContainer: {
-        // paddingHorizontal e paddingBottom definidos inline (responsivos)
-    },
-
-    // Workout card
-    workoutCard: {
+    sectionTitle: { color: '#fff', fontSize: 13, fontWeight: '900', letterSpacing: 1 },
+    viewAll: { color: '#8b5cf6', fontSize: 12, fontWeight: 'bold' },
+    workoutCardSmall: {
         backgroundColor: 'rgba(255,255,255,0.03)',
-        padding: 14,
-        borderRadius: 14,
-        marginBottom: 10,
+        width: 140,
+        padding: 16,
+        borderRadius: 20,
+        marginRight: 12,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.06)',
     },
-    workoutCardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 10,
-    },
-    workoutCardSubtitle: {
-        color: '#8b5cf6',
-        fontSize: 9,
-        fontWeight: '900',
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-        marginBottom: 2,
-    },
-    workoutCardTitle: {
-        color: '#fff',
-        fontSize: 13,
-        fontWeight: 'bold',
-        letterSpacing: -0.3,
-        marginRight: 6,
-    },
-    editBtnBox: {
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        width: 26,
-        height: 26,
-        borderRadius: 13,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    workoutCardContent: { marginBottom: 12 },
-    exerciseRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: 7,
-    },
-    exerciseRowBorder: {
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.05)',
-    },
-    exerciseNameText: { color: '#D1D5DB', fontWeight: '500', fontSize: 11, flex: 1 },
-    exerciseSetsText: { color: '#6B7280', fontSize: 9, fontWeight: '500' },
-    moreExercisesText: { color: '#6B7280', fontSize: 9, fontStyle: 'italic', marginTop: 4 },
-    startBtn: {
-        backgroundColor: '#8b5cf6',
-        paddingVertical: 11,
+    workoutCardIcon: {
+        width: 32,
+        height: 32,
         borderRadius: 10,
-        alignItems: 'center',
-    },
-    startBtnText: {
-        color: '#fff',
-        fontSize: 10,
-        fontWeight: '900',
-        textTransform: 'uppercase',
-        letterSpacing: 0.8,
-    },
-
-    // Footer / logs
-    footerSection: { marginTop: 6 },
-    viewAllText: { color: '#6B7280', fontSize: 10, fontWeight: '500' },
-    logCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.03)',
-        padding: 12,
-        borderRadius: 14,
-        marginBottom: 8,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.06)',
-    },
-    logIconBox: {
-        width: 34,
-        height: 34,
-        borderRadius: 9,
-        backgroundColor: 'rgba(249, 115, 22, 0.12)',
+        backgroundColor: 'rgba(139, 92, 246, 0.1)',
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 10,
+        marginBottom: 10,
     },
-    logContent: { flex: 1 },
-    logTitle: { color: '#fff', fontSize: 12, fontWeight: 'bold', marginBottom: 2 },
-    logSubtitle: { color: '#8b5cf6', fontSize: 10 },
-    logXp: { color: '#8b5cf6', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
-
-    // Misc
-    centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    emptyContainer: {
+    workoutCardType: { color: '#8b5cf6', fontSize: 10, fontWeight: '900', marginBottom: 2 },
+    workoutCardTitle: { color: '#fff', fontSize: 13, fontWeight: 'bold' },
+    emptyWorkoutCard: {
+        width: 140,
+        height: 100,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderStyle: 'dashed',
+        borderRadius: 20,
+        justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: 32,
+    },
+    emptyWorkoutText: { color: '#4B5563', fontSize: 12, marginTop: 4, fontWeight: 'bold' },
+
+    // Schedule Widget
+    scheduleSection: { marginBottom: 30 },
+    scheduleCard: {
         backgroundColor: 'rgba(255,255,255,0.02)',
-        borderRadius: 16,
+        borderRadius: 24,
+        padding: 20,
+        flexDirection: 'row',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.05)',
-        borderStyle: 'dashed',
-        marginTop: 10,
-        marginBottom: 32,
     },
-    emptyTextHeader: {
-        color: '#6B7280',
-        fontSize: 11,
-        fontWeight: '900',
-        textTransform: 'uppercase',
-        letterSpacing: 2,
-        marginBottom: 6,
+    scheduleTimeline: {
+        alignItems: 'center',
+        marginRight: 16,
+        paddingTop: 6,
     },
-    emptyText: { color: '#9CA3AF', textAlign: 'center', fontSize: 12 },
+    timelineDotActive: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#8b5cf6' },
+    timelineLine: { width: 2, flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 4 },
+    timelineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.2)' },
+    scheduleContent: { flex: 1 },
+    scheduleItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+        opacity: 0.5,
+    },
+    scheduleItemActive: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#8b5cf6',
+        padding: 16,
+        borderRadius: 16,
+    },
+    scheduleTime: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+    scheduleLabel: { color: '#fff', fontSize: 13, marginTop: 2 },
+    scheduleTimeActive: { color: 'rgba(255,255,255,0.8)', fontSize: 10, fontWeight: 'bold' },
+    scheduleLabelActive: { color: '#fff', fontSize: 14, fontWeight: 'bold', marginTop: 2 },
+
+    // History
+    historySection: { marginBottom: 30 },
+    historyCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        padding: 16,
+        borderRadius: 20,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
+    },
+    historyIconBox: {
+        width: 36,
+        height: 36,
+        borderRadius: 12,
+        backgroundColor: 'rgba(249, 115, 22, 0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    historyTitle: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
+    historyDate: { color: '#6B7280', fontSize: 12, marginTop: 2 },
+    historyXp: { color: '#8b5cf6', fontWeight: '900', fontSize: 12 },
+
+    // FAB
+    fab: {
+        position: 'absolute',
+        right: 20,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: '#8b5cf6',
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 8,
+        shadowColor: '#8b5cf6',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+    },
+
+    // Empty State
+    emptyState: { alignItems: 'center', paddingVertical: 40 },
+    emptyMessage: { color: '#6B7280', fontStyle: 'italic', textAlign: 'center', marginBottom: 20, fontSize: 13 },
+    quickStartBtn: {
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 12,
+    },
+    quickStartBtnText: { color: '#fff', fontSize: 11, fontWeight: '900', letterSpacing: 1 },
 });

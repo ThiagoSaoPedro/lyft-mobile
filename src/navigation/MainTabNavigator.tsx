@@ -7,7 +7,7 @@ import HomeScreen from '../screens/HomeScreen';
 import KanbanScreen from '../screens/KanbanScreen';
 import WorkoutsScreen from '../screens/WorkoutsScreen';
 import StudentsScreen from '../screens/StudentsScreen';
-import SettingsScreen from '../screens/SettingsScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -19,26 +19,27 @@ export default function MainTabNavigator({ route }: any) {
             screenOptions={{
                 headerShown: false,
                 tabBarShowLabel: false,
-                tabBarActiveTintColor: '#8b5cf6',
+                tabBarActiveTintColor: '#a78bfa',
                 tabBarInactiveTintColor: '#4B5563',
                 tabBarStyle: {
-                    backgroundColor: '#18181b', // Glass dark
+                    backgroundColor: '#09090b', // Ultra dark background
                     borderTopWidth: 1,
-                    borderTopColor: '#27272a',
-                    height: Platform.OS === 'ios' ? 85 : 65,
-                    paddingBottom: Platform.OS === 'ios' ? 30 : 10,
-                    paddingTop: 10,
+                    borderTopColor: '#18181b',
+                    height: Platform.OS === 'ios' ? 88 : 68,
+                    paddingBottom: Platform.OS === 'ios' ? 32 : 12,
+                    paddingTop: 12,
                     elevation: 0,
+                    shadowOpacity: 0,
                 },
             }}
         >
             <Tab.Screen
-                name="DashboardTab"
+                name="HomeTab"
                 component={HomeScreen}
                 initialParams={{ token, user }}
                 options={{
                     tabBarIcon: ({ color, size }) => (
-                        <MaterialCommunityIcons name="home-variant" color={color} size={size + 4} />
+                        <MaterialCommunityIcons name="home-variant" color={color} size={size + 6} />
                     ),
                 }}
             />
@@ -49,7 +50,7 @@ export default function MainTabNavigator({ route }: any) {
                 initialParams={{ token, user }}
                 options={{
                     tabBarIcon: ({ color, size }) => (
-                        <MaterialCommunityIcons name="dumbbell" color={color} size={size + 2} />
+                        <MaterialCommunityIcons name="dumbbell" color={color} size={size + 4} />
                     ),
                 }}
             />
@@ -60,7 +61,7 @@ export default function MainTabNavigator({ route }: any) {
                 initialParams={{ token, user }}
                 options={{
                     tabBarIcon: ({ color, size }) => (
-                        <MaterialCommunityIcons name="calendar-month" color={color} size={size + 2} />
+                        <MaterialCommunityIcons name="calendar-month" color={color} size={size + 4} />
                     ),
                 }}
             />
@@ -72,19 +73,19 @@ export default function MainTabNavigator({ route }: any) {
                     initialParams={{ token, user }}
                     options={{
                         tabBarIcon: ({ color, size }) => (
-                            <MaterialCommunityIcons name="account-group" color={color} size={size + 4} />
+                            <MaterialCommunityIcons name="account-group" color={color} size={size + 6} />
                         ),
                     }}
                 />
             )}
 
             <Tab.Screen
-                name="SettingsTab"
-                component={SettingsScreen}
+                name="ProfileTab"
+                component={ProfileScreen}
                 initialParams={{ token, user }}
                 options={{
                     tabBarIcon: ({ color, size }) => (
-                        <MaterialCommunityIcons name="cog" color={color} size={size + 2} />
+                        <MaterialCommunityIcons name="account-circle-outline" color={color} size={size + 6} />
                     ),
                 }}
             />
